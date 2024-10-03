@@ -58,7 +58,11 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  Repository
+    exposed-modules:  Repository.Repository
+                      , Repository.PersonRepository
+                      , Repository.SessionRepository
+                      , Repository.LogRepository
+                      , Repository.ApplicationRepository  
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -72,6 +76,7 @@ library
                     , postgresql-simple
                     , product-profunctors
                     , uuid
+                    , time
 
     -- Directories containing source files.
     hs-source-dirs:   src

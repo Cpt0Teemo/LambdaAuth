@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Repository (someFunc) where
+module Repository.Repository (someFunc) where
 
 import Opaleye
 import Data.UUID (UUID, nil, toString)

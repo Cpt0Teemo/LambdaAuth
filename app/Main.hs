@@ -1,6 +1,6 @@
 module Main where
 
-import qualified Repository (someFunc)
+import qualified Repository.Repository as Repository (someFunc) 
 
 main :: IO ()
 main = do
