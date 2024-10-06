@@ -68,7 +68,7 @@ library
     -- other-modules:
 
     -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
+    other-extensions: OverloadedStrings 
 
     -- Other library packages from which modules are imported.
     build-depends:    base ^>=4.18.2.1
@@ -77,6 +77,7 @@ library
                     , product-profunctors
                     , uuid
                     , time
+                    , text
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -95,12 +96,15 @@ executable LambdaAuth
     -- other-modules:
 
     -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
+    other-extensions: OverloadedStrings 
 
     -- Other library packages from which modules are imported.
     build-depends:
         base ^>=4.18.2.1,
-        LambdaAuth
+        LambdaAuth,
+        scotty,
+        postgresql-simple,
+        text
 
     -- Directories containing source files.
     hs-source-dirs:   app
