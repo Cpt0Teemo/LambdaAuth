@@ -1,10 +1,13 @@
+SET TIME ZONE 'UTC';
+
 create table person(
     "personId" uuid PRIMARY KEY,
     "givenName" varchar(127),
     "middleNames" varchar(255),
     "lastName" varchar(127),
     "email" varchar(255),
-    "updatedAt" timestamp
+    "password" varchar(255),
+    "updatedAt" timestamp with time zone
 );
 create table application(
     "applicationId" uuid PRIMARY KEY,
@@ -23,6 +26,6 @@ create table log(
     logType varchar(127),
     jsonData jsonb
 );
-insert into person("personId", "givenName", "middleNames", "lastName", "email", "updatedAt")
-values ('2731e589-b931-40e9-ae8f-a204baccdc61', 'Yoan', 'middle', 'Poulmarck', 'ypoulmarck@gmail.com', CURRENT_TIMESTAMP)
+insert into person("personId", "givenName", "middleNames", "lastName", "email", "password", "updatedAt")
+values ('2731e589-b931-40e9-ae8f-a204baccdc61', 'Yoan', 'middle', 'Poulmarck', 'ypoulmarck@gmail.com', 'password', CURRENT_TIMESTAMP)
 --psql -h localhost -p 5432 -d LambdaAuth -U user
