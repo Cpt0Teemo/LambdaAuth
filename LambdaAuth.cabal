@@ -64,6 +64,7 @@ library
                       , Repository.LogRepository
                       , Repository.ApplicationRepository
                       , LoginService
+                      , JWT
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -72,7 +73,8 @@ library
     other-extensions: OverloadedStrings 
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.18.2.1
+    build-depends:    bytestring ^>=0.11.5.4
+                    , base ^>=4.18.2.1
                     , opaleye
                     , postgresql-simple
                     , product-profunctors
@@ -80,6 +82,11 @@ library
                     , time
                     , text
                     , http-types
+                    , aeson
+                    , bytestring
+                    , crypton
+                    , memory
+                    , base64-bytestring
 
     -- Directories containing source files.
     hs-source-dirs:   src
