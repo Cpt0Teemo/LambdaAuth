@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module JWT (addStringClaim, addBoolClaim, addNumberClaim) where
+module JWT (toToken, addStringClaim, addBoolClaim, addNumberClaim, isValid) where
 
 import qualified Data.Aeson.KeyMap as KM ( insert, KeyMap, lookup, empty )
 import Data.Aeson.Key (fromString)

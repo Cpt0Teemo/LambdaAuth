@@ -130,10 +130,10 @@ test-suite LambdaAuth-test
     default-language: GHC2021
 
     -- Modules included in this executable, other than Main.
-    -- other-modules:
+    other-modules:    JWTSpec
 
     -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
+    other-extensions: OverloadedStrings
 
     -- The interface type and version of the test suite.
     type:             exitcode-stdio-1.0
@@ -147,4 +147,8 @@ test-suite LambdaAuth-test
     -- Test dependencies.
     build-depends:
         base ^>=4.18.2.1,
-        LambdaAuth
+        LambdaAuth,
+        HUnit,
+        bytestring,
+        tasty,
+        tasty-hunit
