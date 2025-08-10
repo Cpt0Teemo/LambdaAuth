@@ -7,36 +7,55 @@ import Network.HTTP.Types.Status
 import Database.PostgreSQL.Simple
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as LIO (readFile)
+import Helpers
 import LoginService
+import Control.Monad (mfilter)
+import JWT
+import Data.Bifunctor
+import Control.Monad (liftM)
+import Data.Either.Extra (maybeToEither)
 
-
+main :: IO ()
 main = scotty 3000 $ do
     get "/user" $ do
         conn  <- liftIO . connect $ localPG
         email <- liftIO . test $ conn
         html $ mconcat ["<h1>Scotty, ", L.fromStrict email, " me up!</h1>"]
 
+    get "/.wellknown/jwk.json" $ do
+        publicKey <- publicKeyToJWK <$> retrievePublicKey <$> retrievePrivateKey
+        status status200
+        json publicKey
+
     get "/login" $ do
         loginPage <- liftIO . LIO.readFile $ "app/LoginPage.html"
         html loginPage
 
     post "/login" $ do
+        privateKey <- retrievePrivateKey
         conn  <- liftIO . connect $ localPG
         maybeUsername :: Maybe String <- formParamMaybe "username"
         maybePassword :: Maybe String <- formParamMaybe "password"
         case (maybeUsername, maybePassword) of
-            (Just username, Just password) -> do
-                maybeUser <- liftIO . getUserByEmail conn $ username
-                loginUser . isUserPasswordCorrect maybeUser $ password
-            _ -> status status400 >> text "Missing username or password"
+                    (Just username, Just password) -> do
+                        eitherUser <- liftIO . fmap (maybeToEither "Couldn't find User") . getUserByEmail conn $ username
+                        case eitherUser of
+                            Right user -> if verifyUserPassword password user
+                                         then liftIO (createUserJwt privateKey user) >>= loginUser
+                                         else loginUser (Left "Invalid password")
+                            Left err -> loginUser (Left err)
+                    _ -> loginUser (Left "Missing username or password")
 
-loginUser :: Bool -> ActionM ()
-loginUser True = status status200 >> text "User credentials are correct"
-loginUser False = status status404 >> text "Username and password do not match a user"
+loginUser :: Either a JwtToken -> ActionM ()
+loginUser (Right token) = status status200 >> text (bsToLazyText token)
+loginUser _ = status status404 >> text "Username and password do not match a user"
 
-isUserPasswordCorrect :: Maybe Person -> UnencryptedPassword -> Bool
-isUserPasswordCorrect (Just user) password = verifyUserPassword user password
-isUserPasswordCorrect Nothing _ = False
+retrievePrivateKey :: ActionM PrivateKey
+retrievePrivateKey = do
+    eitherPrivateKey <- liftIO . readPrivateKeyFromPem $ "private_key.pem"
+    case eitherPrivateKey of
+        Left errorStr -> liftIO $ putStrLn errorStr >> fail "Couldn't find private key, aborting"
+        Right key -> return key
 
 localPG :: ConnectInfo
 localPG = defaultConnectInfo

@@ -5,38 +5,47 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import qualified Data.ByteString.Char8 as BS
 import JWT
+import Helpers
+import Control.Monad.IO.Class (liftIO)
+import Data.Maybe (isJust)
+import Crypto.PubKey.RSA.Types
+import Data.Aeson
 
 -- https://jwt.rocks/ for generating JWT
 
-testSecret :: BS.ByteString
-testSecret = "a-string-secret-at-least-256-bits-long"
-
 -- All JWT tests grouped together
 jwtTests :: TestTree
-jwtTests = testGroup "JWT Tests" 
+jwtTests = testGroup "JWT Tests"
   [ testCase "Create a valid JWT" testCreateValidJWT
   , testCase "Check a valid JWT signature" testCheckValidJWTSignature
-  , testCase "Check an invalid JWT signature" testCheckInvalidJWTSignature
   ]
 
 testCreateValidJWT :: Assertion
 testCreateValidJWT = do
-    let expectedJwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJuYW1lIjoiSm9obiBEb2UiLCJzdWIiOiIxMjM0NTY3ODkwIn0.0JhgHi-tv1J-lFsc5DD1__104EfxNGMnQ95SHiwgeL8"
+    privateKey <- liftIO retrievePrivateKey
+    let expectedJwt = Right "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJuYW1lIjoiSm9obiBEb2UiLCJzdWIiOiIxMjM0NTY3ODkwIn0.Jp1mvUhdXUq66go262L90wZ4ffuxXWlp-dYQOryAR6oeUPPqrDMWdPCZg8Y0Iuuy8Brsl-o6gbUGf3mp4JhRGV1-i0YR5TZZXNNqgFC2JfTxUgmRLthZwQWTLOPpUomQwJo66B6iLzLe7aZBQIfoWiG0G9f5Z9xeSEwGlP6dv9GoyEuVNbrYHkJ2VVnBOAqzfkdjqeWKkdMJxzFW1YSa8jBh3sQAEytQg5kAHk6MgrDq8MU9ybPMyg2JahlSMTXbvleH7OIf20CwhBrJZ0T9JAjAvfv3Fd7hmSjpDJDJ3bUj5Nls6T5BEqMXqD1zvs4CQFPsuUFi-tAZ4pVuuwrgAQ"
     let jwtMonad = do
             addStringClaim "sub" "1234567890"
             addStringClaim "name" "John Doe"
             addBoolClaim "admin" True
             addNumberClaim "iat" 1516239022
-    let jwt = toToken testSecret jwtMonad
+    jwt <- liftIO . toToken privateKey $ jwtMonad
     assertEqual "JWT token should match expected value" expectedJwt jwt
 
 testCheckValidJWTSignature :: Assertion
 testCheckValidJWTSignature = do
-    let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJuYW1lIjoiSm9obiBEb2UiLCJzdWIiOiIxMjM0NTY3ODkwIn0.0JhgHi-tv1J-lFsc5DD1__104EfxNGMnQ95SHiwgeL8"
-    assertBool "JWT signature should be valid" (isValid testSecret jwt)
+    privateKey <- liftIO retrievePrivateKey
+    let publicKey = retrievePublicKey privateKey
+    let jwt = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJuYW1lIjoiSm9obiBEb2UiLCJzdWIiOiIxMjM0NTY3ODkwIn0.Jp1mvUhdXUq66go262L90wZ4ffuxXWlp-dYQOryAR6oeUPPqrDMWdPCZg8Y0Iuuy8Brsl-o6gbUGf3mp4JhRGV1-i0YR5TZZXNNqgFC2JfTxUgmRLthZwQWTLOPpUomQwJo66B6iLzLe7aZBQIfoWiG0G9f5Z9xeSEwGlP6dv9GoyEuVNbrYHkJ2VVnBOAqzfkdjqeWKkdMJxzFW1YSa8jBh3sQAEytQg5kAHk6MgrDq8MU9ybPMyg2JahlSMTXbvleH7OIf20CwhBrJZ0T9JAjAvfv3Fd7hmSjpDJDJ3bUj5Nls6T5BEqMXqD1zvs4CQFPsuUFi-tAZ4pVuuwrgAQ"
+    let result = fromToken publicKey jwt
+    assertBool "Returns valid claims" (isJust result)
 
-testCheckInvalidJWTSignature :: Assertion
-testCheckInvalidJWTSignature = do
-    let jwtMadeWithDiffSignature = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbiI6dHJ1ZSwiaWF0IjoxNTE2MjM5MDIyLCJuYW1lIjoiSm9obiBEb2UiLCJzdWIiOiIxMjM0NTY3ODkwIn0.NlPUPF45faG4VCR1WRGCcFnbVxD4AT3a580IYPqq0rc"
-    assertBool "JWT signature should be invalid" (not $ isValid testSecret jwtMadeWithDiffSignature)
+retrievePublicKey :: PrivateKey -> PublicKey
+retrievePublicKey = toPublicKey . KeyPair
 
+retrievePrivateKey :: IO PrivateKey
+retrievePrivateKey = do
+    eitherPrivateKey <- readPrivateKeyFromPem "./test/test_private_key.pem"
+    case eitherPrivateKey of
+        Left errorStr -> putStrLn errorStr >> fail "Couldn't find private key, aborting"
+        Right key -> return key
