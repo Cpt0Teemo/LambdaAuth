@@ -1,7 +1,7 @@
 module Main (main) where
 
-import Test.Tasty
 import JWTSpec (jwtTests)
+import Test.Tasty
 
 main :: IO ()
 main = defaultMain tests
